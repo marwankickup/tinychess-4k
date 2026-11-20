@@ -1,30 +1,34 @@
-# tiny-chess-01 starter
+# tiny-chess-01 — a 4 KB chess engine
 
-A working entry to fork: `main.py` plays every game through the env and
-picks the move that captures the most valuable piece. It is a template,
-not a contender. Replace its one-line choice with a real search.
+`main.py` is a complete chess engine in 4,079 bytes of Python
+(stdlib only, no other files read, fully deterministic).
 
-## The size rule
+## How it plays
 
-- `main.py` is the whole engine: at most 4,096 bytes as committed,
-  Python 3.13, standard library only. It reads, imports or execs no other
-  file in the repository.
-- Every byte counts: comments, whitespace, docstrings.
-- Compression is allowed and counted. A `main.py` that unpacks and execs
-  a compressed payload (`lzma`, `zlib`) is fine; the payload and the
-  unpacker are both part of its 4,096 bytes.
-- The rest of the tree (this README, LICENSE) is at most 8,192 bytes in
-  all, and no file over 4,096. MIT, BSD, ISC and 0BSD licences fit.
-- Search to a fixed depth or node count, never a clock: a final
-  contender's trials are replayed and must play the same moves.
+- **Board**: 0x88 mailbox, signed piece ints; make-only with
+  snapshot/restore instead of unmake. Incremental evaluation and
+  game-phase tracking on every move.
+- **Search**: negamax alpha-beta with iterative deepening to a fixed
+  budget of 60,000 nodes per move (node-counted, never a clock, so
+  replays are identical). Quiescence over captures and promotions,
+  with full evasions when in check.
+- **Transposition table**: dict keyed by the raw board bytes plus
+  side to move; stores best move, depth and a bound flag, used for
+  cutoffs and move ordering (TT move first, then MVV-LVA captures).
+- **Evaluation**: tapered — midgame and endgame piece values
+  interpolated by game phase, with hand-written piece-square tables
+  for pawns, knights and kings in the midgame and kings in the
+  endgame (file-mirrored, packed one value per character).
+- The driver rebuilds each position from the standard start
+  position plus the game's move list, so no FEN parser is needed.
 
-## Grade it locally
+Size trade-offs made to fit 4 KB: the engine never castles and
+never captures en passant itself (both are still executed when
+the opponent or the opening book plays them), and bishops, rooks
+and queens use plain material values without square tables.
 
-You need Docker and the `makefun` CLI. Download the competition's dev
-kit, unpack it, and from inside it run:
+## Rules recap
 
-    makefun grade-local --kit . --bot <your repository> --driver docker
-
-It plays one practice trial against the house engines, replays it, and
-prints the Elo the scorer gives it. Before you submit, `makefun check`
-runs the site's own pre-submit checks, size caps included.
+- `main.py` ≤ 4,096 bytes as committed; the whole repo ≤ 8,192.
+- Python 3.13, standard library only; fixed node budget, no clock,
+  no randomness — trials are replayed and must match exactly.
