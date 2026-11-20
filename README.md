@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/tiny-chess-01/marwankickup/tinychess-4k/rank.svg)](https://make.fun/bounty/tiny-chess-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01)
 [![reward](https://make.fun/badge/tiny-chess-01/marwankickup/tinychess-4k/reward.svg)](https://make.fun/bounty/tiny-chess-01?utm_source=github&utm_medium=readme&utm_campaign=tiny-chess-01)
 
-`main.py` is a complete chess engine in 4,031 bytes of Python
+`main.py` is a complete chess engine in 3,886 bytes of Python
 (stdlib only, no other files read, fully deterministic).
 Entry for the make.fun bounty
 [tiny-chess-01 "Build the strongest chess engine in 4 KB of Python"](https://make.fun/bounty/tiny-chess-01).
@@ -29,18 +29,22 @@ exactly the bytes `makefun compress` wrote from it.
 - **Search**: negamax alpha-beta with PVS (principal variation
   search) and iterative deepening to a fixed budget of 90,000
   nodes per move — node-counted, never a clock, so replays are
-  identical. Quiescence over captures and promotions, with
-  full evasions when in check. Positions repeated from the
+  identical. Null-move pruning and late-move reductions keep
+  the tree narrow. Quiescence over captures and promotions,
+  with delta pruning and full evasions when in check. Positions repeated from the
   game or the search path, and the 100-ply rule, score as
   draws inside the search.
 - **Transposition table**: Zobrist keys (fixed-seed PRNG),
   bound flags (exact / lower / upper), best-move ordering:
-  TT move first, then MVV-LVA captures.
+  TT move first, then MVV-LVA captures, then two killers and
+  a history table for quiet moves.
 - **Evaluation**: tapered (midgame/endgame interpolated by
   game phase) with hand-written piece-square tables for every
   piece — pawns, knights, bishops, rooks, queens and both king
   tables — plus material, the bishop pair, and pseudo-legal
-  mobility for knights, bishops, rooks and queens.
+  mobility for knights, bishops, rooks and queens. Pawn
+  structure (doubled, isolated, passed), rook open-file
+  bonuses and a king-shield term share the same board scan.
 - The driver rebuilds each position from the standard start
   position plus the game's move list, so no FEN parser is
   needed.
